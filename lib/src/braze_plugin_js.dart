@@ -24,6 +24,57 @@ class BrazePluginJS {
   external static openSession();
 
   external static requestImmediateDataFlush();
+
+  /// Subscribe to content cards updates. The subscriber callback will be called whenever content cards are updated.
+  /// This method should be called before calling openSession.
+  external static void subscribeToContentCardsUpdates(Function(ContentCards cards) callback);
+}
+
+@JS()
+class ContentCards {
+  /// Array of Card descendents (ClassicCard, CaptionedImage, Banner).
+  external List<Card> get cards;
+
+  /// When this collection of cards was received from Braze servers.
+  /// If null, it means the content cards are still being fetched for this user.
+  external get lastUpdated;
+
+  /// Get the current unviewed card count. This is useful for powering badges on your control for showing the content cards.
+  /// ControlCard cards do not count towards the unviewed count.
+  external num getUnviewedCardCount();
+}
+
+/// Abstract base for news feed and Content Cards cards. Use subclasses ClassicCard, CaptionedImage, ImageOnly, and ControlCard.
+@JS()
+class Card {
+  /// When this card expires and should stop being shown to users.
+  external get expiresAt;
+
+  /// Object of string/string key/value pairs. Default to empty object {}.
+  @anonymous
+  external get extras;
+
+  /// Id of the card. This will be reported back to braze with events for analytics purposes.
+  external String? get id;
+
+  /// Whether to pin this card to the top of the view.
+  external bool get pinned;
+
+  /// When this card is last modified.
+  external get updated;
+
+  /// Whether this card has been shown to the user.
+  external bool get viewed;
+
+  /// Call this method if you wish to programmatically remove the card from the feed and log a dismissal.
+  /// This method is meant to be used with the Braze UI.
+  ///
+  /// If you are using your own UI, this method will have no effect. Instead, you should use logCardDismissal
+  /// to log analytics and then remove the card from the DOM manually.
+  external void dismissCard();
+
+  /// Remove all event subscriptions from this message.
+  external void removeAllSubscriptions();
 }
 
 /// Provides further customization for initializing the [BrazeClient]

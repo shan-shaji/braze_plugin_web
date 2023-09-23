@@ -1,6 +1,7 @@
-import 'package:flutter_web_plugins/flutter_web_plugins.dart';
+import 'dart:js';
 
-import 'braze_plugin_js.dart';
+import 'package:flutter_web_plugins/flutter_web_plugins.dart';
+import 'package:braze_plugin_web/src/braze_plugin_js.dart';
 
 /// Simplified proxy version of the Braze SDK.
 /// If more control over the Braze Web SDK is needed, use `BrazePluginJS`
@@ -30,8 +31,7 @@ class BrazeClient {
     bool automaticallyShowInAppMessages = false,
     bool enableLogging = false,
   }) {
-    final options =
-        InitializationOptions(baseUrl: baseUrl, enableLogging: enableLogging);
+    final options = InitializationOptions(baseUrl: baseUrl, enableLogging: enableLogging);
 
     BrazePluginJS.initialize(apiKey, options);
 
@@ -54,10 +54,10 @@ class BrazeClient {
   /// [BrazeClient.initialize] or [BrazeClient.initializeWithOptions]
   /// must be called before calling this
   static void setCustomAttribute(
-    String key,
-    dynamic value, {
-    bool flush = false,
-  }) {
+      String key,
+      dynamic value, {
+        bool flush = false,
+      }) {
     final user = BrazePluginJS.getUser();
     user.setCustomUserAttribute(key, value, false);
 
@@ -69,9 +69,9 @@ class BrazeClient {
   /// [BrazeClient.initialize] or [BrazeClient.initializeWithOptions]
   /// must be called before calling this
   static void setCustomAttributes(
-    Map<String, dynamic> attributes, {
-    bool flush = false,
-  }) {
+      Map<String, dynamic> attributes, {
+        bool flush = false,
+      }) {
     var user = BrazePluginJS.getUser();
     attributes.forEach((key, value) {
       user.setCustomUserAttribute(key, value, false);
@@ -86,17 +86,47 @@ class BrazeClient {
   /// [BrazeClient.initialize] or [BrazeClient.initializeWithOptions]
   /// must be called before calling this
   static void logCustomEvent(
-    String key,
-    String? properties, {
-    bool flush = false,
-  }) {
-    final brazeProperties = properties == null || properties.isEmpty
-        ? properties
-        : jsonParse(properties);
+      String key,
+      String? properties, {
+        bool flush = false,
+      }) {
+    final brazeProperties = properties == null || properties.isEmpty ? properties : jsonParse(properties);
 
     BrazePluginJS.logCustomEvent(key, brazeProperties);
 
     if (flush) BrazePluginJS.requestImmediateDataFlush();
+  }
+
+  static void _requestContentCardRefresh() {
+    final successCallBackSubscriber = allowInterop(() {
+      print('Refreshed');
+    });
+
+    final errorCallBackSubscriber = allowInterop(() {
+      print('Error');
+    });
+
+    BrazePluginJS.requestContentCardsRefresh(successCallBackSubscriber, errorCallBackSubscriber);
+  }
+
+  /// Subscribe to content cards updates. The callback will be called whenever content cards are updated.
+  /// This method should be called before calling openSession.
+  ///
+  /// [BrazeClient.initialize] or [BrazeClient.initializeWithOptions]
+  /// must be called before calling this
+  static void subscribeToContentCardsUpdates(
+      Function(ContentCards cards) callBack, {
+        bool requestContentCardRefresh = false,
+      }) {
+    try {
+      if (requestContentCardRefresh) _requestContentCardRefresh();
+      final subscriber = allowInterop((ContentCards cards) {
+        callBack(cards);
+      });
+      BrazePluginJS.subscribeToContentCardsUpdates(subscriber);
+    } catch (e) {
+      rethrow;
+    }
   }
 }
 
